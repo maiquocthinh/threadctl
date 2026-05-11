@@ -1,0 +1,24 @@
+# threadctl
+
+/.claude/
+/node_modules/
+/dist/
+*.log
+*.bak-*
+test-output.txt
+bun-path*.txt
+version.txt
+schema-output.*
+schema-error.txt
+read-schema.ts
+read-schema.cjs
+check-schema.ts
+schema-check.txt
+session-first-line.txt
+.threadctl-mappings.jsonl
+
+# Build outputs
+threadctl
+threadctl.exe
+threadctl-*
+*.exe

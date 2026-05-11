@@ -1,0 +1,4 @@
+#!/usr/bin/env bun
+import { runCli } from "./cli";
+
+runCli(Bun.argv.slice(2));
