@@ -1,0 +1,85 @@
+name: Build and Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            runner: windows-latest
+            target: bun-windows-x64
+            output: threadctl-windows.exe
+          - os: macos-intel
+            runner: macos-13
+            target: bun-darwin-x64
+            output: threadctl-macos-intel
+          - os: macos-arm
+            runner: macos-latest
+            target: bun-darwin-arm64
+            output: threadctl-macos-arm
+          - os: linux
+            runner: ubuntu-latest
+            target: bun-linux-x64
+            output: threadctl-linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build executable
+        run: bun build src/index.ts --compile --target=${{ matrix.target }} --outfile dist/${{ matrix.output }}
+
+      - name: Make executable (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x dist/${{ matrix.output }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: dist/${{ matrix.output }}
+
+  release:
+    name: Upload Release Assets
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Display structure
+        run: ls -R dist
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/threadctl-windows.exe/threadctl-windows.exe
+            dist/threadctl-macos-intel/threadctl-macos-intel
+            dist/threadctl-macos-arm/threadctl-macos-arm
+            dist/threadctl-linux/threadctl-linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
