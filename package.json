@@ -1,0 +1,21 @@
+{
+  "name": "threadctl",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "threadctl": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --compile --outfile threadctl",
+    "build:windows": "bun build src/index.ts --compile --target=bun-windows-x64 --outfile dist/threadctl-windows.exe",
+    "build:macos": "bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/threadctl-macos",
+    "build:macos-arm": "bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/threadctl-macos-arm",
+    "build:linux": "bun build src/index.ts --compile --target=bun-linux-x64 --outfile dist/threadctl-linux",
+    "build:all": "bun run build:windows && bun run build:macos && bun run build:macos-arm && bun run build:linux"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
