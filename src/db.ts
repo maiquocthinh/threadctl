@@ -6,6 +6,7 @@ export interface ThreadRow {
   [key: string]: unknown;
   id: string;
   model_provider: string;
+  title?: string;
   thread_name?: string;
   cwd?: string;
   updated_at?: string;
@@ -111,7 +112,7 @@ export function copySpecificThreads(
       }
 
       // Build values array matching column order
-      const values = columns.map((col) => {
+      const values = columns.map((col): any => {
         if (col === "id") return newId;
         if (col === "model_provider") return targetProvider;
         return thread[col] ?? null;

@@ -244,7 +244,7 @@ Examples:
     if (values.verbose && threadsToDelete.length > 0) {
       log("\nThreads:");
       for (const thread of threadsToDelete.slice(0, 10)) {
-        log(`  ${thread.id} - ${thread.thread_name || "(no name)"} [${thread.model_provider}]`);
+        log(`  ${thread.id} - ${thread.title || thread.thread_name || "(no name)"} [${thread.model_provider}]`);
       }
       if (threadsToDelete.length > 10) {
         log(`  ... and ${threadsToDelete.length - 10} more`);

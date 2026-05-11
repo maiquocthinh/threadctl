@@ -9,6 +9,10 @@ interface ThreadWithName extends ThreadRow {
   displayName?: string;
 }
 
+function getThreadDisplayName(thread: ThreadWithName): string {
+  return thread.displayName || thread.title || thread.thread_name || "Untitled";
+}
+
 /**
  * Load thread names from session_index.jsonl
  */
@@ -58,7 +62,7 @@ function displayThreads(threads: ThreadWithName[]) {
       rowIndex++;
       const num = String(rowIndex).padEnd(3);
       const id = String(thread.id).substring(0, 36).padEnd(36);
-      const name = String(thread.displayName || thread.thread_name || "Untitled").substring(0, 47).padEnd(47);
+      const name = String(getThreadDisplayName(thread)).substring(0, 47).padEnd(47);
       const updated = formatUpdatedAt(thread.updated_at);
 
       console.log(`│ ${num} │ ${id} │ ${name} │ ${updated} │`);
@@ -143,7 +147,7 @@ export function selectThreadIds(
   // Merge thread names
   const threadsWithNames: ThreadWithName[] = threads.map(t => ({
     ...t,
-    displayName: threadNames.get(t.id)
+    displayName: threadNames.get(t.id) || t.title || t.thread_name
   }));
 
   displayThreads(threadsWithNames);
@@ -237,7 +241,7 @@ function logSelectedThreads(selectedIds: string[], threadsWithNames: ThreadWithN
   log(`\nSelected ${selectedIds.length} thread(s):`);
   selectedIds.forEach((id, idx) => {
     const thread = threadsWithNames.find((t) => t.id === id);
-    const name = thread?.displayName || thread?.thread_name || "Untitled";
+    const name = thread ? getThreadDisplayName(thread) : "Untitled";
     console.log(`  ${idx + 1}. ${name} (${id.substring(0, 8)}...)`);
   });
 }
