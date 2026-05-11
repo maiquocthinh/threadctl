@@ -19,7 +19,7 @@ jobs:
             target: bun-windows-x64
             output: threadctl-windows.exe
           - os: macos-intel
-            runner: macos-13
+            runner: macos-15-intel
             target: bun-darwin-x64
             output: threadctl-macos-intel
           - os: macos-arm
