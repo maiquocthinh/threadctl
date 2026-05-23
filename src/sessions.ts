@@ -248,7 +248,7 @@ export async function updateSessionIndex(
     }
 
     // Get thread name from session_index.jsonl using original ID
-    const threadName = threadNames.get(session.id) || "Synced thread";
+    const threadName = threadNames.get(session.id) || session.threadName || "Synced thread";
     const updatedAt = new Date().toISOString();
 
     const entry = JSON.stringify({

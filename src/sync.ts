@@ -10,7 +10,7 @@ import {
   type SessionMeta,
 } from "./sessions";
 import { createBackup, log, verbose, warn } from "./utils";
-import { saveMappings, type SyncMapping } from "./mapping";
+import { loadMappings, saveMappings, type SyncMapping } from "./mapping";
 
 export interface SyncOptions {
   from: string;
@@ -63,15 +63,18 @@ async function syncOneDirection(
   let threadResult: { copied: number; skipped: number; mappings: SyncMapping[] };
   let threadsToSync: ThreadRow[];
 
+  // Load existing mappings for idempotency check
+  const existingMappings = await loadMappings(codexHome);
+
   try {
     if (threadIds && threadIds.length > 0) {
       // Sync specific threads
       threadsToSync = findThreadsByIds(db, threadIds);
       log(`Selected ${threadsToSync.length} threads to sync`);
-      threadResult = copySpecificThreads(db, threadsToSync, to, dryRun);
+      threadResult = copySpecificThreads(db, threadsToSync, to, dryRun, existingMappings);
     } else {
       // Sync all threads from provider
-      threadResult = copyThreads(db, from, to, dryRun);
+      threadResult = copyThreads(db, from, to, dryRun, existingMappings);
       threadsToSync = []; // Will be fetched from sessions
     }
 
