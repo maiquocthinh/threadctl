@@ -31,12 +31,14 @@ export async function loadMappings(codexHome: string): Promise<SyncMapping[]> {
 }
 
 /**
- * Save a new sync mapping.
+ * Save new sync mappings (merged with existing, deduplicated by originalId:targetProvider).
  */
 export async function saveMappings(
   codexHome: string,
-  mappings: SyncMapping[]
+  newMappings: SyncMapping[]
 ): Promise<void> {
+  if (newMappings.length === 0) return;
+
   const filePath = getMappingFilePath(codexHome);
 
   // Ensure directory exists
@@ -45,8 +47,28 @@ export async function saveMappings(
     await mkdir(dir, { recursive: true });
   }
 
-  const lines = mappings.map((m) => JSON.stringify(m)).join("\n");
-  await writeFile(filePath, lines + "\n", { flag: "a" });
+  // Merge existing + new mappings, dedup by originalId:targetProvider
+  const existing = await loadMappings(codexHome);
+  const seen = new Set<string>();
+  const merged: SyncMapping[] = [];
+
+  for (const m of existing) {
+    const key = `${m.originalId}:${m.targetProvider}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(m);
+    }
+  }
+  for (const m of newMappings) {
+    const key = `${m.originalId}:${m.targetProvider}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(m);
+    }
+  }
+
+  const lines = merged.map((m) => JSON.stringify(m)).join("\n");
+  await writeFile(filePath, lines + "\n", "utf-8");
 }
 
 /**

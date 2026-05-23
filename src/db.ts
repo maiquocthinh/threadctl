@@ -69,7 +69,8 @@ export function copySpecificThreads(
   db: Database,
   threads: ThreadRow[],
   targetProvider: string,
-  dryRun: boolean
+  dryRun: boolean,
+  existingMappings: SyncMapping[] = []
 ): { copied: number; skipped: number; mappings: SyncMapping[] } {
   const columns = readThreadsSchema(db);
   verbose(`Threads table columns: ${columns.join(", ")}`);
@@ -78,13 +79,23 @@ export function copySpecificThreads(
     return { copied: 0, skipped: 0, mappings: [] };
   }
 
+  const alreadySynced = new Set(
+    existingMappings.map((m) => `${m.originalId}:${m.targetProvider}`)
+  );
+
   let copied = 0;
   let skipped = 0;
   const mappings: SyncMapping[] = [];
 
   if (dryRun) {
     for (const thread of threads) {
-      const newId = generateSyncId(thread.id, targetProvider);
+      const key = `${thread.id}:${targetProvider}`;
+      if (alreadySynced.has(key)) {
+        verbose(`[dry-run] Already synced (skip): ${thread.id}`);
+        skipped++;
+        continue;
+      }
+      const newId = generateSyncId();
       if (threadExists(db, newId)) {
         verbose(`[dry-run] Skip existing: ${newId}`);
         skipped++;
@@ -96,14 +107,20 @@ export function copySpecificThreads(
     return { copied, skipped, mappings };
   }
 
-  // Build INSERT statement dynamically
   const placeholders = columns.map(() => "?").join(", ");
   const insertSql = `INSERT OR IGNORE INTO threads (${columns.join(", ")}) VALUES (${placeholders})`;
   const insertStmt = db.prepare(insertSql);
 
   const transaction = db.transaction(() => {
     for (const thread of threads) {
-      const newId = generateSyncId(thread.id, targetProvider);
+      const key = `${thread.id}:${targetProvider}`;
+      if (alreadySynced.has(key)) {
+        verbose(`Already synced (skip): ${thread.id}`);
+        skipped++;
+        continue;
+      }
+
+      const newId = generateSyncId();
 
       if (threadExists(db, newId)) {
         verbose(`Skip existing: ${newId}`);
@@ -111,7 +128,6 @@ export function copySpecificThreads(
         continue;
       }
 
-      // Build values array matching column order
       const values = columns.map((col): any => {
         if (col === "id") return newId;
         if (col === "model_provider") return targetProvider;
@@ -123,7 +139,6 @@ export function copySpecificThreads(
         verbose(`Copied: ${thread.id} -> ${newId}`);
         copied++;
 
-        // Save mapping
         mappings.push({
           originalId: thread.id,
           newId,
@@ -132,7 +147,6 @@ export function copySpecificThreads(
           syncedAt: new Date().toISOString(),
         });
       } catch (e: any) {
-        // INSERT OR IGNORE handles duplicates, but catch unexpected errors
         if (e.message?.includes("UNIQUE constraint")) {
           verbose(`Skip duplicate: ${newId}`);
           skipped++;
@@ -157,9 +171,10 @@ export function copyThreads(
   db: Database,
   sourceProvider: string,
   targetProvider: string,
-  dryRun: boolean
+  dryRun: boolean,
+  existingMappings: SyncMapping[] = []
 ): { copied: number; skipped: number; mappings: SyncMapping[] } {
   const threads = findThreadsByProvider(db, sourceProvider);
   log(`Found ${threads.length} threads with model_provider="${sourceProvider}"`);
-  return copySpecificThreads(db, threads, targetProvider, dryRun);
+  return copySpecificThreads(db, threads, targetProvider, dryRun, existingMappings);
 }

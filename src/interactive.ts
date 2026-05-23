@@ -150,6 +150,13 @@ export function selectThreadIds(
     displayName: threadNames.get(t.id) || t.title || t.thread_name
   }));
 
+  // Build display-order array matching grouped table output
+  const groups = groupThreadsByProject(threadsWithNames);
+  const displayOrder: ThreadWithName[] = [];
+  for (const [, projectThreads] of groups) {
+    displayOrder.push(...projectThreads);
+  }
+
   displayThreads(threadsWithNames);
 
   console.log(`\nSelect threads to ${action}:`);
@@ -166,8 +173,8 @@ export function selectThreadIds(
   }
 
   if (input.trim().toLowerCase() === "all") {
-    const selectedIds = threads.map((t) => t.id);
-    logSelectedThreads(selectedIds, threadsWithNames);
+    const selectedIds = displayOrder.map((t) => t.id);
+    logSelectedThreads(selectedIds, displayOrder);
     return selectedIds;
   }
 
@@ -177,9 +184,8 @@ export function selectThreadIds(
 
   for (const part of parts) {
     if (part.includes("-")) {
-      // Range: 1-5
       const [start, end] = part.split("-").map((n) => parseInt(n.trim()));
-      if (isNaN(start) || isNaN(end) || start < 1 || end > threads.length) {
+      if (isNaN(start) || isNaN(end) || start < 1 || end > displayOrder.length) {
         error(`Invalid range: ${part}`);
         continue;
       }
@@ -187,9 +193,8 @@ export function selectThreadIds(
         selected.add(i);
       }
     } else {
-      // Single number
       const num = parseInt(part);
-      if (isNaN(num) || num < 1 || num > threads.length) {
+      if (isNaN(num) || num < 1 || num > displayOrder.length) {
         error(`Invalid number: ${part}`);
         continue;
       }
@@ -199,14 +204,14 @@ export function selectThreadIds(
 
   const selectedIds = Array.from(selected)
     .sort((a, b) => a - b)
-    .map((num) => threadsWithNames[num - 1].id);
+    .map((num) => displayOrder[num - 1].id);
 
   if (selectedIds.length === 0) {
     log("No valid threads selected.");
     return [];
   }
 
-  logSelectedThreads(selectedIds, threadsWithNames);
+  logSelectedThreads(selectedIds, displayOrder);
 
   return selectedIds;
 }
